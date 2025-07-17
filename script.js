@@ -32,7 +32,7 @@ function toggleRegisterForm() {
   document.getElementById("companyRegisterForm").style.display = type === "company" ? "block" : "none";
 }
 
-// --- Student Registration ---
+// --- Student Registration --- (localStorage, unchanged)
 if (document.getElementById("studentRegisterForm")) {
   document.getElementById("studentRegisterForm").onsubmit = function (e) {
     e.preventDefault();
@@ -71,7 +71,7 @@ if (document.getElementById("studentRegisterForm")) {
   };
 }
 
-// --- Company Registration ---
+// --- Company Registration --- (localStorage, unchanged)
 if (document.getElementById("companyRegisterForm")) {
   document.getElementById("companyRegisterForm").onsubmit = function (e) {
     e.preventDefault();
@@ -109,7 +109,7 @@ if (document.getElementById("companyRegisterForm")) {
   };
 }
 
-// --- Login Form ---
+// --- Login Form --- (localStorage, unchanged)
 if (document.getElementById("loginForm")) {
   document.getElementById("loginForm").onsubmit = function (e) {
     e.preventDefault();
@@ -141,7 +141,7 @@ function showAddListingForm() {
   document.getElementById("addListingForm").style.display = "block";
 }
 
-// --- Company Dashboard: Internship Posting (active) ---
+// --- Company Dashboard: Internship Posting (Firebase Firestore version) ---
 if (document.getElementById("companyListingForm")) {
   document.getElementById("companyListingForm").onsubmit = function (e) {
     e.preventDefault();
@@ -149,40 +149,63 @@ if (document.getElementById("companyListingForm")) {
     const desc = document.getElementById("listingDesc").value;
     const location = document.getElementById("listingLocation").value;
     const requirements = document.getElementById("listingReqs").value;
-    let companyListings = JSON.parse(localStorage.getItem("companyListings")) || [];
     const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
 
-    companyListings.push({
+    // Post listing to Firestore
+    db.collection("internships").add({
       company: loggedInUser.name,
       title,
       desc,
       location,
       requirements,
       postedBy: loggedInUser.email,
+      postedAt: new Date(),
       applications: []
+    }).then(() => {
+      document.getElementById("companyListingForm").reset();
+      document.getElementById("addListingForm").style.display = "none";
+      renderCompanyListings();
+      alert("Listing posted!");
+    }).catch((error) => {
+      alert("Error posting listing: " + error);
     });
-
-    localStorage.setItem("companyListings", JSON.stringify(companyListings));
-    document.getElementById("companyListingForm").reset();
-    document.getElementById("addListingForm").style.display = "none";
-    renderCompanyListings();
   };
 }
 
-// --- Render Company Listings (active) ---
+// --- Render Company Listings (Firebase Firestore version) ---
 function renderCompanyListings() {
   const listingsDiv = document.getElementById("companyListingList");
   if (!listingsDiv) return;
   const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
-  const companyListings = JSON.parse(localStorage.getItem("companyListings")) || [];
-  const myListings = companyListings.filter(l => l.postedBy === loggedInUser.email);
 
-  listingsDiv.innerHTML = myListings.length === 0 ? "<p>No listings yet.</p>" : myListings.map((listing) => `
-    <div class="listing-card">
-      <h4>${listing.title}</h4>
-      <p><strong>Description:</strong> ${listing.desc}</p>
-      <p><strong>Location:</strong> ${listing.location}</p>
-      <p><strong>Requirements:</strong> ${listing.requirements}</p>
+  db.collection("internships").where("postedBy", "==", loggedInUser.email).get()
+    .then((querySnapshot) => {
+      let html = "";
+      if (querySnapshot.empty) {
+        html = "<p>No listings yet.</p>";
+      } else {
+        querySnapshot.forEach((doc) => {
+          const listing = doc.data();
+          html += `
+            <div class="listing-card">
+              <h4>${listing.title}</h4>
+              <p><strong>Description:</strong> ${listing.desc}</p>
+              <p><strong>Location:</strong> ${listing.location}</p>
+              <p><strong>Requirements:</strong> ${listing.requirements}</p>
+            </div>
+          `;
+        });
+      }
+      listingsDiv.innerHTML = html;
+    })
+    .catch((error) => {
+      listingsDiv.innerHTML = "<p>Error loading listings.</p>";
+      console.error("Error getting listings: ", error);
+    });
+}
+if (document.getElementById("companyListingList")) {
+  renderCompanyListings();
+}
     </div>
   `).join("");
 }
