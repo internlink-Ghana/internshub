@@ -17,8 +17,8 @@
     <div class="register-box">
       <h2>Create Your Account</h2>
       <select id="registerType" onchange="toggleRegisterForm()">
-        <option value="student">Register as Student</option>
-        <option value="company">Register as Company</option>
+        <option value="student" >Register as Student</option>
+        <option value="company" >Register as Company</option>
       </select>
       <form id="studentRegisterForm">
         <input type="text" id="studentName" placeholder="Full Name" required>
@@ -39,6 +39,8 @@
         <input type="password" id="companyPassword" placeholder="Password" required>
         <button type="submit" id="registerBtn">Register as Company</button>
       </form>
+      <script type="module" src="firebase-init.js"></script>
+<script type="module" src="register.js"></script>
       <p>Already have an account? <a href="login.html">Login here</a></p>
     </div>
   </main>
